@@ -11,7 +11,9 @@ import {
   FileText,
   BookOpen,
   Cog,
-  LogOut
+  LogOut,
+  Menu,
+  X
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Permission } from '../types/auth';
@@ -26,6 +28,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
   const { user, hasPermission, canAccessResource, logout } = useAuth();
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const tabs = [
     { 
@@ -110,24 +113,33 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
   const handleLogout = () => {
     logout();
     setShowUserMenu(false);
+    setShowMobileMenu(false);
+  };
+
+  const handleTabChange = (tabId: string) => {
+    onTabChange(tabId);
+    setShowMobileMenu(false);
   };
 
   return (
     <>
-      <header className="bg-white shadow-sm border-b border-gray-200">
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
+            {/* Logo */}
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <h1 className="text-2xl font-bold text-primary-600">SkillHarbor</h1>
-                <p className="text-xs text-gray-500">Enterprise Skills Management</p>
+                <h1 className="text-xl sm:text-2xl font-bold text-primary-600">SkillHarbor</h1>
+                <p className="text-xs text-gray-500 hidden sm:block">Enterprise Skills Management</p>
               </div>
-              <nav className="ml-10">
-                <div className="flex space-x-2 overflow-x-auto">
+              
+              {/* Desktop Navigation */}
+              <nav className="hidden lg:ml-10 lg:block">
+                <div className="flex space-x-1">
                   {visibleTabs.map(tab => (
                     <button
                       key={tab.id}
-                      onClick={() => onTabChange(tab.id)}
+                      onClick={() => handleTabChange(tab.id)}
                       className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                         activeTab === tab.id
                           ? 'text-primary-600 bg-primary-50'
@@ -142,11 +154,13 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
               </nav>
             </div>
             
-            <div className="flex items-center space-x-4">
+            {/* Right side */}
+            <div className="flex items-center space-x-2 sm:space-x-4">
+              {/* Settings button - Desktop only */}
               {hasPermission(Permission.SYSTEM_CONFIGURATION) && (
                 <button 
-                  onClick={() => onTabChange('settings')}
-                  className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  onClick={() => handleTabChange('settings')}
+                  className="hidden sm:block p-2 text-gray-400 hover:text-gray-600 transition-colors"
                   title="System Settings"
                 >
                   <Settings className="w-5 h-5" />
@@ -162,14 +176,19 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
                   <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
                     <User className="w-4 h-4 text-primary-600" />
                   </div>
-                  <span className="text-sm font-medium hidden sm:block">{user?.name}</span>
-                  <ChevronDown className="w-4 h-4" />
+                  <span className="text-sm font-medium hidden sm:block max-w-32 truncate">{user?.name}</span>
+                  <ChevronDown className="w-4 h-4 hidden sm:block" />
                 </button>
 
-                {/* Dropdown Menu */}
+                {/* User Dropdown Menu */}
                 {showUserMenu && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-50">
                     <div className="py-1">
+                      <div className="px-4 py-2 border-b border-gray-100 sm:hidden">
+                        <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                        <p className="text-xs text-gray-500">{user?.email}</p>
+                      </div>
+                      
                       <button
                         onClick={() => {
                           setShowUserProfile(true);
@@ -180,6 +199,20 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
                         <User className="w-4 h-4 mr-3" />
                         View Profile
                       </button>
+                      
+                      {/* Settings in mobile user menu */}
+                      {hasPermission(Permission.SYSTEM_CONFIGURATION) && (
+                        <button
+                          onClick={() => {
+                            handleTabChange('settings');
+                            setShowUserMenu(false);
+                          }}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors sm:hidden"
+                        >
+                          <Settings className="w-4 h-4 mr-3" />
+                          Settings
+                        </button>
+                      )}
                       
                       <div className="border-t border-gray-100"></div>
                       
@@ -194,15 +227,52 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
                   </div>
                 )}
               </div>
+
+              {/* Mobile menu button */}
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className="lg:hidden p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                {showMobileMenu ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
+              </button>
             </div>
           </div>
+
+          {/* Mobile Navigation */}
+          {showMobileMenu && (
+            <div className="lg:hidden border-t border-gray-200 bg-white">
+              <div className="px-2 pt-2 pb-3 space-y-1 max-h-96 overflow-y-auto">
+                {visibleTabs.map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => handleTabChange(tab.id)}
+                    className={`flex items-center w-full px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                      activeTab === tab.id
+                        ? 'text-primary-600 bg-primary-50'
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <tab.icon className="w-5 h-5 mr-3" />
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Click outside to close menu */}
-        {showUserMenu && (
+        {/* Click outside to close menus */}
+        {(showUserMenu || showMobileMenu) && (
           <div 
-            className="fixed inset-0 z-40" 
-            onClick={() => setShowUserMenu(false)}
+            className="fixed inset-0 z-30" 
+            onClick={() => {
+              setShowUserMenu(false);
+              setShowMobileMenu(false);
+            }}
           ></div>
         )}
       </header>
