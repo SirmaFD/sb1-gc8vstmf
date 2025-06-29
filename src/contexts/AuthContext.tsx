@@ -121,22 +121,45 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const canAccessResource = (resource: string, action: string, context?: any): boolean => {
     if (!authState.user) return false;
 
-    // Define access control rules
+    // Define access control rules - more permissive for employees
     const rules: Record<string, Permission[]> = {
-      'dashboard': [Permission.VIEW_OWN_PROFILE],
-      'organization': [Permission.VIEW_ORGANIZATION_DASHBOARD],
-      'employees': [Permission.VIEW_ALL_EMPLOYEES, Permission.VIEW_TEAM_PROFILES, Permission.VIEW_DEPARTMENT_PROFILES],
+      'dashboard': [
+        Permission.VIEW_OWN_PROFILE, // All users can access dashboard
+        Permission.VIEW_ORGANIZATION_DASHBOARD
+      ],
+      'organization': [
+        Permission.VIEW_ORGANIZATION_DASHBOARD,
+        Permission.VIEW_ALL_EMPLOYEES,
+        Permission.VIEW_TEAM_PROFILES,
+        Permission.VIEW_DEPARTMENT_PROFILES
+      ],
+      'employees': [
+        Permission.VIEW_ALL_EMPLOYEES, 
+        Permission.VIEW_TEAM_PROFILES, 
+        Permission.VIEW_DEPARTMENT_PROFILES
+      ],
       'assessments': [
         Permission.CONDUCT_ASSESSMENTS, 
         Permission.VIEW_OWN_ASSESSMENTS,
-        // Allow all users to access assessments for their own skills
-        Permission.VIEW_OWN_PROFILE
+        Permission.VIEW_OWN_PROFILE // Allow all users to access assessments for self-assessment
       ],
-      'job-profiles': [Permission.MANAGE_JOB_PROFILES, Permission.VIEW_ORGANIZATION_DASHBOARD],
-      'skills': [Permission.VIEW_OWN_PROFILE]
+      'job-profiles': [
+        Permission.MANAGE_JOB_PROFILES, 
+        Permission.VIEW_ORGANIZATION_DASHBOARD,
+        Permission.VIEW_OWN_PROFILE // Allow employees to view job profiles for career planning
+      ],
+      'skills': [
+        Permission.VIEW_OWN_PROFILE // All authenticated users can access skills
+      ]
     };
 
     const requiredPermissions = rules[resource] || [];
+    
+    // If no specific permissions required, allow access for authenticated users
+    if (requiredPermissions.length === 0) {
+      return true;
+    }
+    
     return hasAnyPermission(requiredPermissions);
   };
 

@@ -19,7 +19,7 @@ import LoginForm from './components/LoginForm';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function AppContent() {
-  const [activeTab, setActiveTab] = useState('organization');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [skills, setSkills] = useState<Skill[]>(mockSkills);
   const [employees] = useState<Employee[]>(mockEmployees);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
@@ -68,13 +68,13 @@ function AppContent() {
     switch (activeTab) {
       case 'dashboard':
         return (
-          <ProtectedRoute resource="dashboard" action="view">
+          <ProtectedRoute resource="dashboard" action="view" allowSelfAccess={true}>
             <Dashboard skills={skills} />
           </ProtectedRoute>
         );
       case 'skills':
         return (
-          <ProtectedRoute resource="skills" action="view">
+          <ProtectedRoute resource="skills" action="view" allowSelfAccess={true}>
             <SkillsList skills={skills} onUpdateSkill={handleUpdateSkill} />
           </ProtectedRoute>
         );
@@ -92,13 +92,13 @@ function AppContent() {
         );
       case 'job-profiles':
         return (
-          <ProtectedRoute resource="job-profiles" action="view">
+          <ProtectedRoute resource="job-profiles" action="view" allowSelfAccess={true}>
             <JobProfiles />
           </ProtectedRoute>
         );
       case 'assessments':
         return (
-          <ProtectedRoute resource="assessments" action="view">
+          <ProtectedRoute resource="assessments" action="view" allowSelfAccess={true}>
             <AssessmentCenter />
           </ProtectedRoute>
         );
@@ -116,7 +116,7 @@ function AppContent() {
         );
       case 'learning-paths':
         return (
-          <ProtectedRoute resource="skills" action="view">
+          <ProtectedRoute resource="skills" action="view" allowSelfAccess={true}>
             <LearningPaths />
           </ProtectedRoute>
         );
@@ -128,8 +128,8 @@ function AppContent() {
         );
       default:
         return (
-          <ProtectedRoute resource="organization" action="view">
-            <OrganizationDashboard employees={employees} />
+          <ProtectedRoute resource="dashboard" action="view" allowSelfAccess={true}>
+            <Dashboard skills={skills} />
           </ProtectedRoute>
         );
     }

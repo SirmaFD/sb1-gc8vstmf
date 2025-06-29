@@ -9,6 +9,7 @@ interface ProtectedRouteProps {
   resource?: string;
   action?: string;
   fallback?: React.ReactNode;
+  allowSelfAccess?: boolean; // New prop to allow self-access for employees
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
@@ -16,7 +17,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   requiredPermissions = [],
   resource,
   action,
-  fallback
+  fallback,
+  allowSelfAccess = false
 }) => {
   const { user, hasAnyPermission, canAccessResource } = useAuth();
 
@@ -33,6 +35,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Check permission-based access
   if (requiredPermissions.length > 0) {
+    // If allowSelfAccess is true and user has basic profile access, allow it
+    if (allowSelfAccess && hasAnyPermission([Permission.VIEW_OWN_PROFILE])) {
+      return <>{children}</>;
+    }
+    
     if (!hasAnyPermission(requiredPermissions)) {
       return fallback || <AccessDenied />;
     }
