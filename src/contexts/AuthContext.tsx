@@ -122,69 +122,71 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const canAccessResource = (resource: string, action: string, context?: any): boolean => {
     if (!authState.user) return false;
 
-    // Define access control rules - employees can access their own data
-    const rules: Record<string, Permission[]> = {
-      'dashboard': [
-        Permission.VIEW_OWN_PROFILE // All authenticated users can access dashboard
-      ],
-      'organization': [
-        Permission.VIEW_ORGANIZATION_DASHBOARD,
-        Permission.VIEW_ALL_EMPLOYEES,
-        Permission.VIEW_TEAM_PROFILES,
-        Permission.VIEW_DEPARTMENT_PROFILES
-      ],
-      'employees': [
-        Permission.VIEW_ALL_EMPLOYEES, 
-        Permission.VIEW_TEAM_PROFILES, 
-        Permission.VIEW_DEPARTMENT_PROFILES
-      ],
-      'assessments': [
-        Permission.CONDUCT_ASSESSMENTS, 
-        Permission.VIEW_OWN_ASSESSMENTS,
-        Permission.VIEW_OWN_PROFILE // Allow self-assessment and viewing own assessments
-      ],
-      'job-profiles': [
-        Permission.MANAGE_JOB_PROFILES, 
-        Permission.VIEW_ORGANIZATION_DASHBOARD,
-        Permission.VIEW_OWN_PROFILE // Allow employees to view job profiles for career planning
-      ],
-      'skills': [
-        Permission.VIEW_OWN_PROFILE, // All authenticated users can access skills
-        Permission.EDIT_OWN_SKILLS
-      ]
-    };
-
-    const requiredPermissions = rules[resource] || [];
-    
-    // If no specific permissions required, allow access for authenticated users
-    if (requiredPermissions.length === 0) {
-      return true;
+    // Define access control rules based on user role and permissions
+    switch (resource) {
+      case 'dashboard':
+        // All authenticated users can access their dashboard
+        return hasPermission(Permission.VIEW_OWN_PROFILE);
+        
+      case 'skills':
+        // All authenticated users can view/edit their own skills
+        return hasPermission(Permission.VIEW_OWN_PROFILE);
+        
+      case 'assessments':
+        // Users can view their own assessments or conduct assessments if they have permission
+        return hasPermission(Permission.VIEW_OWN_ASSESSMENTS) || 
+               hasPermission(Permission.CONDUCT_ASSESSMENTS);
+               
+      case 'job-profiles':
+        // Employees can view job profiles for career planning, managers can manage them
+        return hasPermission(Permission.VIEW_OWN_PROFILE) || 
+               hasPermission(Permission.MANAGE_JOB_PROFILES);
+               
+      case 'learning-paths':
+        // All authenticated users can access learning paths
+        return hasPermission(Permission.VIEW_OWN_PROFILE);
+        
+      case 'organization':
+        // Only users with organization-level permissions
+        return hasPermission(Permission.VIEW_ORGANIZATION_DASHBOARD) ||
+               hasPermission(Permission.VIEW_ALL_EMPLOYEES) ||
+               hasPermission(Permission.VIEW_TEAM_PROFILES) ||
+               hasPermission(Permission.VIEW_DEPARTMENT_PROFILES);
+               
+      case 'employees':
+        // Only users with employee management permissions
+        return hasPermission(Permission.VIEW_ALL_EMPLOYEES) ||
+               hasPermission(Permission.VIEW_TEAM_PROFILES) ||
+               hasPermission(Permission.VIEW_DEPARTMENT_PROFILES);
+               
+      default:
+        return false;
     }
-    
-    return hasAnyPermission(requiredPermissions);
   };
 
   const canEditResource = (resource: string, context?: any): boolean => {
     if (!authState.user) return false;
 
     // Define edit permissions
-    const editRules: Record<string, Permission[]> = {
-      'skills': [
-        Permission.EDIT_OWN_SKILLS, // Employees can edit their own skills
-        Permission.EDIT_EMPLOYEE_PROFILES // Managers can edit others
-      ],
-      'assessments': [
-        Permission.CONDUCT_ASSESSMENTS, // Assessors can conduct assessments
-        Permission.VIEW_OWN_ASSESSMENTS // Users can self-assess
-      ],
-      'profile': [
-        Permission.VIEW_OWN_PROFILE, // Users can edit their own profile
-        Permission.EDIT_EMPLOYEE_PROFILES // Managers can edit others
-      ]
-    };
-
-    const requiredPermissions = editRules[resource] || [];
-    return hasAnyPermission(requiredPermissions);
+    switch (resource) {
+      case 'skills':
+        // Users can edit their own skills, managers can edit others
+        return hasPermission(Permission.EDIT_OWN_SKILLS) ||
+               hasPermission(Permission.EDIT_EMPLOYEE_PROFILES);
+               
+      case 'assessments':
+        // Users can self-assess, assessors can assess others
+        return hasPermission(Permission.VIEW_OWN_ASSESSMENTS) ||
+               hasPermission(Permission.CONDUCT_ASSESSMENTS);
+               
+      case 'profile':
+        // Users can edit their own profile, managers can edit others
+        return hasPermission(Permission.VIEW_OWN_PROFILE) ||
+               hasPermission(Permission.EDIT_EMPLOYEE_PROFILES);
+               
+      default:
+        return false;
+    }
   };
 
   const value: AuthContextType = {

@@ -23,7 +23,7 @@ function AppContent() {
   const [skills, setSkills] = useState<Skill[]>(mockSkills);
   const [employees] = useState<Employee[]>(mockEmployees);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   const handleUpdateSkill = (updatedSkill: Skill) => {
     setSkills(prevSkills => {
@@ -68,13 +68,13 @@ function AppContent() {
     switch (activeTab) {
       case 'dashboard':
         return (
-          <ProtectedRoute resource="dashboard" action="view" allowSelfAccess={true}>
+          <ProtectedRoute resource="dashboard" action="view">
             <Dashboard skills={skills} />
           </ProtectedRoute>
         );
       case 'skills':
         return (
-          <ProtectedRoute resource="skills" action="view" allowSelfAccess={true}>
+          <ProtectedRoute resource="skills" action="view">
             <SkillsList skills={skills} onUpdateSkill={handleUpdateSkill} />
           </ProtectedRoute>
         );
@@ -92,13 +92,13 @@ function AppContent() {
         );
       case 'job-profiles':
         return (
-          <ProtectedRoute resource="job-profiles" action="view" allowSelfAccess={true}>
+          <ProtectedRoute resource="job-profiles" action="view">
             <JobProfiles />
           </ProtectedRoute>
         );
       case 'assessments':
         return (
-          <ProtectedRoute resource="assessments" action="view" allowSelfAccess={true}>
+          <ProtectedRoute resource="assessments" action="view">
             <AssessmentCenter />
           </ProtectedRoute>
         );
@@ -116,7 +116,7 @@ function AppContent() {
         );
       case 'learning-paths':
         return (
-          <ProtectedRoute resource="skills" action="view" allowSelfAccess={true}>
+          <ProtectedRoute resource="learning-paths" action="view">
             <LearningPaths />
           </ProtectedRoute>
         );
@@ -128,7 +128,7 @@ function AppContent() {
         );
       default:
         return (
-          <ProtectedRoute resource="dashboard" action="view" allowSelfAccess={true}>
+          <ProtectedRoute resource="dashboard" action="view">
             <Dashboard skills={skills} />
           </ProtectedRoute>
         );

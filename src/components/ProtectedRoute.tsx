@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
   resource?: string;
   action?: string;
   fallback?: React.ReactNode;
-  allowSelfAccess?: boolean; // New prop to allow self-access for employees
+  allowSelfAccess?: boolean;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({

@@ -14,7 +14,8 @@ import {
   TrendingUp,
   Users,
   Plus,
-  ArrowRight
+  ArrowRight,
+  Lock
 } from 'lucide-react';
 
 interface LearningPath {
@@ -44,7 +45,7 @@ const LearningPaths: React.FC = () => {
   const [selectedPath, setSelectedPath] = useState<LearningPath | null>(null);
   const [filter, setFilter] = useState<string>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const { user, hasPermission } = useAuth();
+  const { user, hasPermission, canAccessResource } = useAuth();
 
   const [learningPaths, setLearningPaths] = useState<LearningPath[]>([
     {
@@ -103,6 +104,20 @@ const LearningPaths: React.FC = () => {
     }
   ]);
 
+  // Check if user can access learning paths
+  const canAccessLearning = canAccessResource('learning-paths', 'view');
+  const canCreatePaths = hasPermission(Permission.MANAGE_JOB_PROFILES) || hasPermission(Permission.SYSTEM_CONFIGURATION);
+
+  if (!canAccessLearning) {
+    return (
+      <div className="text-center py-12">
+        <Lock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Access Restricted</h3>
+        <p className="text-gray-600">You don't have permission to access learning paths.</p>
+      </div>
+    );
+  }
+
   const getSkillLevelText = (level: SkillLevel): string => {
     const levels = {
       [SkillLevel.BEGINNER]: 'Beginner',
@@ -139,8 +154,6 @@ const LearningPaths: React.FC = () => {
     if (filter === 'recommended') return path.completionRate > 70;
     return path.difficulty === filter;
   });
-
-  const canCreatePaths = hasPermission(Permission.MANAGE_JOB_PROFILES) || hasPermission(Permission.SYSTEM_CONFIGURATION);
 
   const handleCreatePath = (newPathData: Omit<LearningPath, 'id' | 'enrolledCount' | 'completionRate'>) => {
     const newPath: LearningPath = {
@@ -388,11 +401,13 @@ const LearningPaths: React.FC = () => {
       )}
 
       {/* Create Learning Path Modal */}
-      <CreateLearningPathModal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        onCreatePath={handleCreatePath}
-      />
+      {canCreatePaths && (
+        <CreateLearningPathModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onCreatePath={handleCreatePath}
+        />
+      )}
     </div>
   );
 };
