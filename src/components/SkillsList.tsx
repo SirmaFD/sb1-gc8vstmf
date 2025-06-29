@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Skill, Priority } from '../types';
 import { skillCategories } from '../data/mockData';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,17 +10,29 @@ import { Search, Filter, Plus, Lock } from 'lucide-react';
 interface SkillsListProps {
   skills: Skill[];
   onUpdateSkill: (updatedSkill: Skill) => void;
+  autoOpenAddModal?: boolean;
 }
 
-const SkillsList: React.FC<SkillsListProps> = ({ skills, onUpdateSkill }) => {
+const SkillsList: React.FC<SkillsListProps> = ({ 
+  skills, 
+  onUpdateSkill, 
+  autoOpenAddModal = false 
+}) => {
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(autoOpenAddModal);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPriority, setSelectedPriority] = useState('all');
   const { canEditResource } = useAuth();
 
   const canEditSkills = canEditResource('skills');
+
+  // Auto-open add modal if requested
+  useEffect(() => {
+    if (autoOpenAddModal) {
+      setShowAddModal(true);
+    }
+  }, [autoOpenAddModal]);
 
   const filteredSkills = skills.filter(skill => {
     const matchesSearch = skill.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

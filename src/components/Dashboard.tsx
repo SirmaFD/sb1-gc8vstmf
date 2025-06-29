@@ -1,13 +1,14 @@
 import React from 'react';
 import { Skill, SkillLevel, Priority } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { TrendingUp, Target, AlertTriangle, Award, User, Calendar } from 'lucide-react';
+import { TrendingUp, Target, AlertTriangle, Award, User, Calendar, Plus, BookOpen } from 'lucide-react';
 
 interface DashboardProps {
   skills: Skill[];
+  onNavigate?: (tab: string) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ skills }) => {
+const Dashboard: React.FC<DashboardProps> = ({ skills, onNavigate }) => {
   const { user } = useAuth();
 
   const getOverallProgress = (): number => {
@@ -32,6 +33,25 @@ const Dashboard: React.FC<DashboardProps> = ({ skills }) => {
       skill.lastAssessed < thirtyDaysAgo || 
       skill.level < skill.targetLevel
     ).slice(0, 5);
+  };
+
+  const handleQuickAction = (action: string) => {
+    if (onNavigate) {
+      switch (action) {
+        case 'add-skill':
+          onNavigate('skills');
+          // In a real app, you might also trigger the add skill modal
+          break;
+        case 'self-assessment':
+          onNavigate('assessments');
+          break;
+        case 'learning-paths':
+          onNavigate('learning-paths');
+          break;
+        default:
+          break;
+      }
+    }
   };
 
   const stats = [
@@ -95,6 +115,51 @@ const Dashboard: React.FC<DashboardProps> = ({ skills }) => {
             </div>
           </div>
         ))}
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <button 
+            onClick={() => handleQuickAction('add-skill')}
+            className="flex items-center p-4 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors group"
+          >
+            <div className="p-2 bg-primary-100 rounded-lg group-hover:bg-primary-200 transition-colors">
+              <Plus className="w-6 h-6 text-primary-600" />
+            </div>
+            <div className="ml-3 text-left">
+              <p className="font-medium text-primary-900">Add New Skill</p>
+              <p className="text-sm text-primary-700">Track a new skill</p>
+            </div>
+          </button>
+          
+          <button 
+            onClick={() => handleQuickAction('self-assessment')}
+            className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors group"
+          >
+            <div className="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
+              <Calendar className="w-6 h-6 text-green-600" />
+            </div>
+            <div className="ml-3 text-left">
+              <p className="font-medium text-green-900">Self Assessment</p>
+              <p className="text-sm text-green-700">Update your skills</p>
+            </div>
+          </button>
+          
+          <button 
+            onClick={() => handleQuickAction('learning-paths')}
+            className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors group"
+          >
+            <div className="p-2 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+              <BookOpen className="w-6 h-6 text-purple-600" />
+            </div>
+            <div className="ml-3 text-left">
+              <p className="font-medium text-purple-900">Learning Paths</p>
+              <p className="text-sm text-purple-700">Explore development</p>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Skills Distribution Chart */}
@@ -175,36 +240,6 @@ const Dashboard: React.FC<DashboardProps> = ({ skills }) => {
               <p className="text-gray-500">All skills are up to date!</p>
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button className="flex items-center p-4 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors">
-            <Target className="w-6 h-6 text-primary-600 mr-3" />
-            <div className="text-left">
-              <p className="font-medium text-primary-900">Add New Skill</p>
-              <p className="text-sm text-primary-700">Track a new skill</p>
-            </div>
-          </button>
-          
-          <button className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-            <Calendar className="w-6 h-6 text-green-600 mr-3" />
-            <div className="text-left">
-              <p className="font-medium text-green-900">Self Assessment</p>
-              <p className="text-sm text-green-700">Update your skills</p>
-            </div>
-          </button>
-          
-          <button className="flex items-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-            <Award className="w-6 h-6 text-purple-600 mr-3" />
-            <div className="text-left">
-              <p className="font-medium text-purple-900">Learning Paths</p>
-              <p className="text-sm text-purple-700">Explore development</p>
-            </div>
-          </button>
         </div>
       </div>
     </div>

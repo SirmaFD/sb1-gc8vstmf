@@ -49,6 +49,11 @@ function AppContent() {
     setSelectedEmployee(null);
   };
 
+  const handleNavigate = (tab: string) => {
+    console.log('Navigating to tab:', tab);
+    setActiveTab(tab);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -71,7 +76,7 @@ function AppContent() {
       case 'dashboard':
         return (
           <ProtectedRoute resource="dashboard" action="view">
-            <Dashboard skills={skills} />
+            <Dashboard skills={skills} onNavigate={handleNavigate} />
           </ProtectedRoute>
         );
         
@@ -142,7 +147,7 @@ function AppContent() {
         console.log('Default case triggered for tab:', activeTab); // Debug log
         return (
           <ProtectedRoute resource="dashboard" action="view">
-            <Dashboard skills={skills} />
+            <Dashboard skills={skills} onNavigate={handleNavigate} />
           </ProtectedRoute>
         );
     }
@@ -150,7 +155,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header activeTab={activeTab} onTabChange={setActiveTab} />
+      <Header activeTab={activeTab} onTabChange={handleNavigate} />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {renderContent()}
