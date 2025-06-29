@@ -15,6 +15,7 @@ import SkillGapAnalysis from './components/SkillGapAnalysis';
 import ReportsAndAnalytics from './components/ReportsAndAnalytics';
 import LearningPaths from './components/LearningPaths';
 import SystemSettings from './components/SystemSettings';
+import PerformanceManagementDashboard from './components/PerformanceManagementDashboard';
 import LoginForm from './components/LoginForm';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -100,6 +101,13 @@ function AppContent() {
             <EmployeeList employees={employees} onEmployeeSelect={handleEmployeeSelect} />
           </ProtectedRoute>
         );
+
+      case 'performance':
+        return (
+          <ProtectedRoute requiredPermissions={[Permission.EDIT_EMPLOYEE_PROFILES, Permission.CONDUCT_ASSESSMENTS]}>
+            <PerformanceManagementDashboard employees={employees} />
+          </ProtectedRoute>
+        );
         
       case 'job-profiles':
         return (
@@ -169,6 +177,7 @@ function AppContent() {
             Permission.VIEW_TEAM_PROFILES, 
             Permission.VIEW_DEPARTMENT_PROFILES
           ]}
+          allowSelfAccess={true}
         >
           <EmployeeProfile
             employee={selectedEmployee}

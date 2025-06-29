@@ -13,7 +13,8 @@ import {
   Cog,
   LogOut,
   Menu,
-  X
+  X,
+  Award
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Permission } from '../types/auth';
@@ -58,6 +59,12 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
       icon: Users,
       resource: 'employees',
       action: 'view'
+    },
+    { 
+      id: 'performance', 
+      label: 'Performance', 
+      icon: Award,
+      requiredPermissions: [Permission.EDIT_EMPLOYEE_PROFILES, Permission.CONDUCT_ASSESSMENTS]
     },
     { 
       id: 'job-profiles', 
