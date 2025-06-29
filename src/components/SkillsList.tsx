@@ -2,20 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Skill, Priority } from '../types';
 import { skillCategories } from '../data/mockData';
 import { useAuth } from '../contexts/AuthContext';
+import { useUserSkills, useApiMutation } from '../hooks/useApi';
+import { apiService } from '../services/api';
 import SkillCard from './SkillCard';
 import SkillModal from './SkillModal';
 import AddSkillModal from './AddSkillModal';
-import { Search, Filter, Plus, Lock } from 'lucide-react';
+import { Search, Filter, Plus, Lock, AlertCircle, Loader } from 'lucide-react';
 
 interface SkillsListProps {
-  skills: Skill[];
-  onUpdateSkill: (updatedSkill: Skill) => void;
+  skills?: Skill[]; // Optional fallback for mock data
+  onUpdateSkill?: (updatedSkill: Skill) => void; // Optional fallback
   autoOpenAddModal?: boolean;
 }
 
 const SkillsList: React.FC<SkillsListProps> = ({ 
-  skills, 
-  onUpdateSkill, 
+  skills: fallbackSkills = [], 
+  onUpdateSkill: fallbackUpdate,
   autoOpenAddModal = false 
 }) => {
   const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
@@ -23,7 +25,38 @@ const SkillsList: React.FC<SkillsListProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPriority, setSelectedPriority] = useState('all');
-  const { canEditResource } = useAuth();
+  const { user, canEditResource } = useAuth();
+
+  // Use API or fallback to mock data
+  const { data: apiSkills, loading, error, refetch } = useUserSkills(user?.id || '');
+  const skills = apiSkills?.skills || fallbackSkills;
+
+  // Mutations for skill operations
+  const addSkillMutation = useApiMutation(
+    (skillData: any) => apiService.addUserSkill(user!.id, skillData),
+    {
+      onSuccess: () => {
+        refetch();
+        setShowAddModal(false);
+      },
+      onError: (error) => {
+        console.error('Failed to add skill:', error);
+      }
+    }
+  );
+
+  const updateSkillMutation = useApiMutation(
+    ({ skillId, ...skillData }: any) => apiService.updateUserSkill(user!.id, skillId, skillData),
+    {
+      onSuccess: () => {
+        refetch();
+        setSelectedSkill(null);
+      },
+      onError: (error) => {
+        console.error('Failed to update skill:', error);
+      }
+    }
+  );
 
   const canEditSkills = canEditResource('skills');
 
@@ -51,23 +84,82 @@ const SkillsList: React.FC<SkillsListProps> = ({
     setSelectedSkill(null);
   };
 
-  const handleUpdateSkill = (updatedSkill: Skill) => {
+  const handleUpdateSkill = async (updatedSkill: Skill) => {
     if (canEditSkills) {
-      onUpdateSkill(updatedSkill);
-      setSelectedSkill(null);
+      try {
+        if (user?.id) {
+          // Use API
+          await updateSkillMutation.mutate({
+            skillId: updatedSkill.id,
+            currentLevel: updatedSkill.level,
+            targetLevel: updatedSkill.targetLevel,
+            priority: updatedSkill.priority,
+            evidence: updatedSkill.evidence?.join('\n'),
+            developmentPlan: updatedSkill.developmentPlan
+          });
+        } else if (fallbackUpdate) {
+          // Use fallback for mock data
+          fallbackUpdate(updatedSkill);
+          setSelectedSkill(null);
+        }
+      } catch (error) {
+        console.error('Failed to update skill:', error);
+      }
     }
   };
 
-  const handleAddSkill = (newSkillData: Omit<Skill, 'id'>) => {
+  const handleAddSkill = async (newSkillData: Omit<Skill, 'id'>) => {
     if (canEditSkills) {
-      const newSkill: Skill = {
-        ...newSkillData,
-        id: `skill_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      };
-      
-      onUpdateSkill(newSkill);
+      try {
+        if (user?.id) {
+          // Use API
+          await addSkillMutation.mutate({
+            skillId: newSkillData.id || `skill_${Date.now()}`, // Temporary ID for new skills
+            currentLevel: newSkillData.level,
+            targetLevel: newSkillData.targetLevel,
+            priority: newSkillData.priority,
+            evidence: newSkillData.evidence?.join('\n'),
+            developmentPlan: newSkillData.developmentPlan
+          });
+        } else if (fallbackUpdate) {
+          // Use fallback for mock data
+          const newSkill: Skill = {
+            ...newSkillData,
+            id: `skill_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+          };
+          fallbackUpdate(newSkill);
+          setShowAddModal(false);
+        }
+      } catch (error) {
+        console.error('Failed to add skill:', error);
+      }
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader className="w-8 h-8 animate-spin text-primary-600 mr-3" />
+        <span className="text-gray-600">Loading your skills...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12">
+        <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to Load Skills</h3>
+        <p className="text-gray-600 mb-4">{error}</p>
+        <button
+          onClick={() => refetch()}
+          className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -85,9 +177,14 @@ const SkillsList: React.FC<SkillsListProps> = ({
         {canEditSkills && (
           <button 
             onClick={() => setShowAddModal(true)}
-            className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+            disabled={addSkillMutation.loading}
+            className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors disabled:opacity-50"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            {addSkillMutation.loading ? (
+              <Loader className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4 mr-2" />
+            )}
             Add Skill
           </button>
         )}
@@ -167,7 +264,7 @@ const SkillsList: React.FC<SkillsListProps> = ({
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg">No skills found matching your criteria</p>
           <p className="text-gray-400 mt-2">Try adjusting your search or filters</p>
-          {canEditSkills && (
+          {canEditSkills && skills.length === 0 && (
             <button 
               onClick={() => setShowAddModal(true)}
               className="mt-4 flex items-center mx-auto px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
@@ -187,6 +284,7 @@ const SkillsList: React.FC<SkillsListProps> = ({
           onClose={handleCloseModal}
           onUpdate={handleUpdateSkill}
           canEdit={canEditSkills}
+          isUpdating={updateSkillMutation.loading}
         />
       )}
 
@@ -196,6 +294,7 @@ const SkillsList: React.FC<SkillsListProps> = ({
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
           onAddSkill={handleAddSkill}
+          isAdding={addSkillMutation.loading}
         />
       )}
     </div>

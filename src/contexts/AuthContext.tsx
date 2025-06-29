@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthState, UserRole, Permission } from '../types/auth';
-import { mockUsers } from '../data/authData';
+import { apiService } from '../services/api';
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<boolean>;
@@ -35,80 +35,85 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Check for existing session
-    const savedUser = localStorage.getItem('skillharbor_user');
-    if (savedUser) {
-      try {
-        const user = JSON.parse(savedUser);
-        
-        // Convert date strings back to Date objects
-        if (user.createdAt) {
-          user.createdAt = new Date(user.createdAt);
+    const checkAuth = async () => {
+      const savedUser = localStorage.getItem('skillharbor_user');
+      const accessToken = localStorage.getItem('skillharbor_access_token');
+      
+      if (savedUser && accessToken) {
+        try {
+          // Verify token is still valid by fetching current user
+          const response = await apiService.getCurrentUser();
+          
+          // Convert date strings back to Date objects
+          const user = response.user;
+          if (user.createdAt) {
+            user.createdAt = new Date(user.createdAt);
+          }
+          if (user.lastLogin) {
+            user.lastLogin = new Date(user.lastLogin);
+          }
+          
+          setAuthState({
+            user,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null
+          });
+        } catch (error) {
+          // Token is invalid, clear storage
+          localStorage.removeItem('skillharbor_user');
+          localStorage.removeItem('skillharbor_access_token');
+          localStorage.removeItem('skillharbor_refresh_token');
+          setAuthState(prev => ({ ...prev, isLoading: false }));
         }
-        if (user.lastLogin) {
-          user.lastLogin = new Date(user.lastLogin);
-        }
-        
-        setAuthState({
-          user,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null
-        });
-      } catch (error) {
-        localStorage.removeItem('skillharbor_user');
+      } else {
         setAuthState(prev => ({ ...prev, isLoading: false }));
       }
-    } else {
-      setAuthState(prev => ({ ...prev, isLoading: false }));
-    }
+    };
+
+    checkAuth();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const user = mockUsers.find(u => u.email === email);
+      const response = await apiService.login(email, password);
       
-      if (user && user.isActive) {
-        const updatedUser = { ...user, lastLogin: new Date() };
-        localStorage.setItem('skillharbor_user', JSON.stringify(updatedUser));
-        
-        setAuthState({
-          user: updatedUser,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null
-        });
-        return true;
-      } else {
-        setAuthState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: 'Invalid credentials or inactive account'
-        }));
-        return false;
-      }
+      // Store user data
+      localStorage.setItem('skillharbor_user', JSON.stringify(response.user));
+      
+      setAuthState({
+        user: response.user,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null
+      });
+      return true;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Login failed';
       setAuthState(prev => ({
         ...prev,
         isLoading: false,
-        error: 'Login failed. Please try again.'
+        error: errorMessage
       }));
       return false;
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('skillharbor_user');
-    setAuthState({
-      user: null,
-      isAuthenticated: false,
-      isLoading: false,
-      error: null
-    });
+  const logout = async () => {
+    try {
+      await apiService.logout();
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setAuthState({
+        user: null,
+        isAuthenticated: false,
+        isLoading: false,
+        error: null
+      });
+    }
   };
 
   const hasPermission = (permission: Permission): boolean => {
