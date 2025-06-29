@@ -142,13 +142,27 @@ class ApiService {
 
   // Authentication endpoints
   async login(email: string, password: string): Promise<LoginResponse> {
-    const response = await this.request<LoginResponse>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password }),
-    });
+    // For demo purposes, use mock authentication
+    const { mockUsers } = await import('../data/authData');
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    const user = mockUsers.find(u => u.email === email);
+    
+    if (user && user.isActive) {
+      const mockResponse: LoginResponse = {
+        user: { ...user, lastLogin: new Date() },
+        accessToken: 'mock-access-token',
+        refreshToken: 'mock-refresh-token',
+        message: 'Login successful'
+      };
 
-    this.setTokens(response.accessToken, response.refreshToken);
-    return response;
+      this.setTokens(mockResponse.accessToken, mockResponse.refreshToken);
+      return mockResponse;
+    } else {
+      throw new Error('Invalid credentials or inactive account');
+    }
   }
 
   async register(userData: {
@@ -179,7 +193,13 @@ class ApiService {
   }
 
   async getCurrentUser(): Promise<{ user: User }> {
-    return this.request<{ user: User }>('/auth/me');
+    // For demo purposes, return the saved user
+    const savedUser = localStorage.getItem('skillharbor_user');
+    if (savedUser) {
+      const user = JSON.parse(savedUser);
+      return { user };
+    }
+    throw new Error('No user found');
   }
 
   // Skills endpoints
@@ -225,7 +245,9 @@ class ApiService {
 
   // User skills endpoints
   async getUserSkills(userId: string): Promise<{ skills: Skill[] }> {
-    return this.request<{ skills: Skill[] }>(`/skills/user/${userId}`);
+    // For demo purposes, return mock skills
+    const { mockSkills } = await import('../data/mockData');
+    return { skills: mockSkills };
   }
 
   async addUserSkill(userId: string, skillData: {

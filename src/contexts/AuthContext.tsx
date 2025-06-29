@@ -41,24 +41,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (savedUser && accessToken) {
         try {
-          // Verify token is still valid by fetching current user
-          const response = await apiService.getCurrentUser();
+          // Parse saved user first to get basic info
+          const parsedUser = JSON.parse(savedUser);
           
           // Convert date strings back to Date objects
-          const user = response.user;
-          if (user.createdAt) {
-            user.createdAt = new Date(user.createdAt);
+          if (parsedUser.createdAt) {
+            parsedUser.createdAt = new Date(parsedUser.createdAt);
           }
-          if (user.lastLogin) {
-            user.lastLogin = new Date(user.lastLogin);
+          if (parsedUser.lastLogin) {
+            parsedUser.lastLogin = new Date(parsedUser.lastLogin);
           }
-          
+
+          // Set user immediately to prevent undefined errors
           setAuthState({
-            user,
+            user: parsedUser,
             isAuthenticated: true,
             isLoading: false,
             error: null
           });
+
+          // Verify token is still valid by fetching current user
+          try {
+            const response = await apiService.getCurrentUser();
+            const user = response.user;
+            
+            if (user.createdAt) {
+              user.createdAt = new Date(user.createdAt);
+            }
+            if (user.lastLogin) {
+              user.lastLogin = new Date(user.lastLogin);
+            }
+            
+            // Update with fresh user data
+            setAuthState({
+              user,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null
+            });
+          } catch (error) {
+            // If API call fails but we have saved user, keep using saved data
+            console.warn('Failed to refresh user data, using cached data:', error);
+          }
         } catch (error) {
           // Token is invalid, clear storage
           localStorage.removeItem('skillharbor_user');
@@ -117,10 +141,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const hasPermission = (permission: Permission): boolean => {
-    return authState.user?.permissions.includes(permission) || false;
+    // Safely check if user and permissions exist
+    return authState.user?.permissions?.includes(permission) || false;
   };
 
   const hasAnyPermission = (permissions: Permission[]): boolean => {
+    // Safely check if user and permissions exist
+    if (!authState.user?.permissions) return false;
     return permissions.some(permission => hasPermission(permission));
   };
 

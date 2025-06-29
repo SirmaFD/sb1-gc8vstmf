@@ -120,5 +120,15 @@ export const mockUsers: User[] = [
     permissions: rolePermissions.find(r => r.role === UserRole.EMPLOYEE)?.permissions || [],
     isActive: true,
     createdAt: new Date('2023-01-10')
+  },
+  {
+    id: 'user5',
+    email: 'mike.wilson@skillharbor.com',
+    name: 'Mike Wilson',
+    role: UserRole.DEPARTMENT_MANAGER,
+    department: 'Product',
+    permissions: rolePermissions.find(r => r.role === UserRole.DEPARTMENT_MANAGER)?.permissions || [],
+    isActive: true,
+    createdAt: new Date('2023-02-01')
   }
 ];
