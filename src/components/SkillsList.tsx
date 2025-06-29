@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Skill, Priority } from '../types';
 import { skillCategories } from '../data/mockData';
+import { useAuth } from '../contexts/AuthContext';
 import SkillCard from './SkillCard';
 import SkillModal from './SkillModal';
 import AddSkillModal from './AddSkillModal';
-import { Search, Filter, Plus } from 'lucide-react';
+import { Search, Filter, Plus, Lock } from 'lucide-react';
 
 interface SkillsListProps {
   skills: Skill[];
@@ -17,6 +18,9 @@ const SkillsList: React.FC<SkillsListProps> = ({ skills, onUpdateSkill }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedPriority, setSelectedPriority] = useState('all');
+  const { canEditResource } = useAuth();
+
+  const canEditSkills = canEditResource('skills');
 
   const filteredSkills = skills.filter(skill => {
     const matchesSearch = skill.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -36,21 +40,47 @@ const SkillsList: React.FC<SkillsListProps> = ({ skills, onUpdateSkill }) => {
   };
 
   const handleUpdateSkill = (updatedSkill: Skill) => {
-    onUpdateSkill(updatedSkill);
-    setSelectedSkill(null);
+    if (canEditSkills) {
+      onUpdateSkill(updatedSkill);
+      setSelectedSkill(null);
+    }
   };
 
   const handleAddSkill = (newSkillData: Omit<Skill, 'id'>) => {
-    const newSkill: Skill = {
-      ...newSkillData,
-      id: `skill_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    };
-    
-    onUpdateSkill(newSkill);
+    if (canEditSkills) {
+      const newSkill: Skill = {
+        ...newSkillData,
+        id: `skill_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      };
+      
+      onUpdateSkill(newSkill);
+    }
   };
 
   return (
     <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">My Skills</h2>
+          <p className="text-gray-600 mt-1">
+            {canEditSkills 
+              ? 'Manage and track your skill development' 
+              : 'View your current skills and progress'
+            }
+          </p>
+        </div>
+        {canEditSkills && (
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add Skill
+          </button>
+        )}
+      </div>
+
       {/* Search and Filters */}
       <div className="bg-white rounded-lg shadow-md p-6">
         <div className="flex flex-col lg:flex-row gap-4">
@@ -101,13 +131,12 @@ const SkillsList: React.FC<SkillsListProps> = ({ skills, onUpdateSkill }) => {
           <p className="text-sm text-gray-600">
             Showing {filteredSkills.length} of {skills.length} skills
           </p>
-          <button 
-            onClick={() => setShowAddModal(true)}
-            className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Skill
-          </button>
+          {!canEditSkills && (
+            <div className="flex items-center text-sm text-gray-500">
+              <Lock className="w-4 h-4 mr-1" />
+              View-only mode
+            </div>
+          )}
         </div>
       </div>
 
@@ -126,6 +155,15 @@ const SkillsList: React.FC<SkillsListProps> = ({ skills, onUpdateSkill }) => {
         <div className="text-center py-12">
           <p className="text-gray-500 text-lg">No skills found matching your criteria</p>
           <p className="text-gray-400 mt-2">Try adjusting your search or filters</p>
+          {canEditSkills && (
+            <button 
+              onClick={() => setShowAddModal(true)}
+              className="mt-4 flex items-center mx-auto px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Your First Skill
+            </button>
+          )}
         </div>
       )}
 
@@ -136,15 +174,18 @@ const SkillsList: React.FC<SkillsListProps> = ({ skills, onUpdateSkill }) => {
           isOpen={!!selectedSkill}
           onClose={handleCloseModal}
           onUpdate={handleUpdateSkill}
+          canEdit={canEditSkills}
         />
       )}
 
       {/* Add Skill Modal */}
-      <AddSkillModal
-        isOpen={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onAddSkill={handleAddSkill}
-      />
+      {canEditSkills && (
+        <AddSkillModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onAddSkill={handleAddSkill}
+        />
+      )}
     </div>
   );
 };

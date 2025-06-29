@@ -12,7 +12,9 @@ import {
   Star,
   CheckCircle,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Edit,
+  Lock
 } from 'lucide-react';
 
 const AssessmentCenter: React.FC = () => {
@@ -27,7 +29,10 @@ const AssessmentCenter: React.FC = () => {
     nextReviewDate: ''
   });
 
-  const { user, hasPermission } = useAuth();
+  const { user, hasPermission, canEditResource } = useAuth();
+
+  const canConductAssessments = hasPermission(Permission.CONDUCT_ASSESSMENTS);
+  const canSelfAssess = canEditResource('assessments');
 
   const getSkillLevelText = (level: SkillLevel): string => {
     const levels = {
@@ -44,7 +49,7 @@ const AssessmentCenter: React.FC = () => {
     let employeesToShow = employees;
 
     // If user can only view their own assessments, filter to just their data
-    if (!hasPermission(Permission.CONDUCT_ASSESSMENTS) && 
+    if (!canConductAssessments && 
         !hasPermission(Permission.VIEW_ALL_EMPLOYEES) &&
         !hasPermission(Permission.VIEW_TEAM_PROFILES) &&
         !hasPermission(Permission.VIEW_DEPARTMENT_PROFILES)) {
@@ -63,7 +68,7 @@ const AssessmentCenter: React.FC = () => {
     let assessmentsToShow = assessments;
 
     // If user can only view their own assessments, filter accordingly
-    if (!hasPermission(Permission.CONDUCT_ASSESSMENTS) && 
+    if (!canConductAssessments && 
         !hasPermission(Permission.VIEW_ALL_EMPLOYEES) &&
         !hasPermission(Permission.VIEW_TEAM_PROFILES) &&
         !hasPermission(Permission.VIEW_DEPARTMENT_PROFILES)) {
@@ -80,10 +85,10 @@ const AssessmentCenter: React.FC = () => {
 
   const canAssessEmployee = (employee: Employee): boolean => {
     // Users can always assess themselves
-    if (employee.email === user?.email) return true;
+    if (employee.email === user?.email) return canSelfAssess;
     
     // Check if user has assessment permissions for others
-    return hasPermission(Permission.CONDUCT_ASSESSMENTS);
+    return canConductAssessments;
   };
 
   const handleStartAssessment = (employee: Employee, skill: Skill) => {
@@ -127,14 +132,24 @@ const AssessmentCenter: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Assessment Center</h2>
-        <p className="text-gray-600 mt-1">
-          {hasPermission(Permission.CONDUCT_ASSESSMENTS) 
-            ? 'Conduct and manage skill assessments' 
-            : 'View and manage your skill assessments'
-          }
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Assessment Center</h2>
+          <p className="text-gray-600 mt-1">
+            {canConductAssessments 
+              ? 'Conduct and manage skill assessments' 
+              : canSelfAssess
+              ? 'View and manage your skill assessments'
+              : 'View your assessment history'
+            }
+          </p>
+        </div>
+        {!canSelfAssess && !canConductAssessments && (
+          <div className="flex items-center text-sm text-gray-500">
+            <Lock className="w-4 h-4 mr-1" />
+            View-only mode
+          </div>
+        )}
       </div>
 
       {/* Assessment Stats */}
@@ -198,7 +213,7 @@ const AssessmentCenter: React.FC = () => {
         {/* Employees Needing Assessment */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            {hasPermission(Permission.CONDUCT_ASSESSMENTS) 
+            {canConductAssessments 
               ? 'Employees Needing Assessment' 
               : 'Your Skills Needing Assessment'
             }
@@ -236,12 +251,13 @@ const AssessmentCenter: React.FC = () => {
                       {canAssessEmployee(employee) ? (
                         <button
                           onClick={() => handleStartAssessment(employee, skill)}
-                          className="text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded hover:bg-primary-200 transition-colors"
+                          className="flex items-center text-xs bg-primary-100 text-primary-700 px-2 py-1 rounded hover:bg-primary-200 transition-colors"
                         >
+                          <Edit className="w-3 h-3 mr-1" />
                           {employee.email === user?.email ? 'Self-Assess' : 'Assess'}
                         </button>
                       ) : (
-                        <span className="text-xs text-gray-400">No permission</span>
+                        <span className="text-xs text-gray-400">View only</span>
                       )}
                     </div>
                   ))}
@@ -311,7 +327,7 @@ const AssessmentCenter: React.FC = () => {
       </div>
 
       {/* Assessment Modal */}
-      {selectedEmployee && selectedSkill && (
+      {selectedEmployee && selectedSkill && (canSelfAssess || canConductAssessments) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slide-up">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">

@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
 import { Skill, SkillLevel, Priority } from '../types';
-import { X, Calendar, Target, TrendingUp, FileText, Lightbulb } from 'lucide-react';
+import { X, Calendar, Target, TrendingUp, FileText, Lightbulb, Edit, Lock } from 'lucide-react';
 
 interface SkillModalProps {
   skill: Skill;
   isOpen: boolean;
   onClose: () => void;
   onUpdate: (updatedSkill: Skill) => void;
+  canEdit?: boolean;
 }
 
-const SkillModal: React.FC<SkillModalProps> = ({ skill, isOpen, onClose, onUpdate }) => {
+const SkillModal: React.FC<SkillModalProps> = ({ 
+  skill, 
+  isOpen, 
+  onClose, 
+  onUpdate, 
+  canEdit = true 
+}) => {
   const [editedSkill, setEditedSkill] = useState<Skill>(skill);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -27,8 +34,10 @@ const SkillModal: React.FC<SkillModalProps> = ({ skill, isOpen, onClose, onUpdat
   };
 
   const handleSave = () => {
-    onUpdate(editedSkill);
-    setIsEditing(false);
+    if (canEdit) {
+      onUpdate(editedSkill);
+      setIsEditing(false);
+    }
   };
 
   const handleCancel = () => {
@@ -40,7 +49,15 @@ const SkillModal: React.FC<SkillModalProps> = ({ skill, isOpen, onClose, onUpdat
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto animate-slide-up">
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">{skill.name}</h2>
+          <div className="flex items-center">
+            <h2 className="text-xl font-semibold text-gray-900">{skill.name}</h2>
+            {!canEdit && (
+              <div className="ml-3 flex items-center text-sm text-gray-500">
+                <Lock className="w-4 h-4 mr-1" />
+                View Only
+              </div>
+            )}
+          </div>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -57,7 +74,7 @@ const SkillModal: React.FC<SkillModalProps> = ({ skill, isOpen, onClose, onUpdat
                 <TrendingUp className="w-4 h-4 text-primary-500 mr-2" />
                 <span className="text-sm font-medium text-gray-700">Current Level</span>
               </div>
-              {isEditing ? (
+              {isEditing && canEdit ? (
                 <select
                   value={editedSkill.level}
                   onChange={(e) => setEditedSkill({ ...editedSkill, level: parseInt(e.target.value) as SkillLevel })}
@@ -79,7 +96,7 @@ const SkillModal: React.FC<SkillModalProps> = ({ skill, isOpen, onClose, onUpdat
                 <Target className="w-4 h-4 text-green-500 mr-2" />
                 <span className="text-sm font-medium text-gray-700">Target Level</span>
               </div>
-              {isEditing ? (
+              {isEditing && canEdit ? (
                 <select
                   value={editedSkill.targetLevel}
                   onChange={(e) => setEditedSkill({ ...editedSkill, targetLevel: parseInt(e.target.value) as SkillLevel })}
@@ -96,6 +113,31 @@ const SkillModal: React.FC<SkillModalProps> = ({ skill, isOpen, onClose, onUpdat
               )}
             </div>
           </div>
+
+          {/* Priority */}
+          {(isEditing || skill.priority) && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="flex items-center mb-2">
+                <Target className="w-4 h-4 text-orange-500 mr-2" />
+                <span className="text-sm font-medium text-gray-700">Priority</span>
+              </div>
+              {isEditing && canEdit ? (
+                <select
+                  value={editedSkill.priority}
+                  onChange={(e) => setEditedSkill({ ...editedSkill, priority: e.target.value as Priority })}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  {Object.values(Priority).map(priority => (
+                    <option key={priority} value={priority}>
+                      {priority.charAt(0).toUpperCase() + priority.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-lg font-semibold text-gray-900 capitalize">{skill.priority}</p>
+              )}
+            </div>
+          )}
 
           {/* Progress Bar */}
           <div>
@@ -119,7 +161,7 @@ const SkillModal: React.FC<SkillModalProps> = ({ skill, isOpen, onClose, onUpdat
               <FileText className="w-4 h-4 text-gray-500 mr-2" />
               <span className="text-sm font-medium text-gray-700">Description</span>
             </div>
-            {isEditing ? (
+            {isEditing && canEdit ? (
               <textarea
                 value={editedSkill.description || ''}
                 onChange={(e) => setEditedSkill({ ...editedSkill, description: e.target.value })}
@@ -138,17 +180,30 @@ const SkillModal: React.FC<SkillModalProps> = ({ skill, isOpen, onClose, onUpdat
               <Calendar className="w-4 h-4 text-blue-500 mr-2" />
               <span className="text-sm font-medium text-gray-700">Evidence</span>
             </div>
-            <div className="space-y-2">
-              {skill.evidence && skill.evidence.length > 0 ? (
-                skill.evidence.map((evidence, index) => (
-                  <div key={index} className="bg-blue-50 p-3 rounded-md">
-                    <p className="text-sm text-blue-800">{evidence}</p>
-                  </div>
-                ))
-              ) : (
-                <p className="text-gray-500 text-sm">No evidence recorded</p>
-              )}
-            </div>
+            {isEditing && canEdit ? (
+              <textarea
+                value={editedSkill.evidence?.join('\n') || ''}
+                onChange={(e) => setEditedSkill({ 
+                  ...editedSkill, 
+                  evidence: e.target.value.split('\n').filter(line => line.trim() !== '') 
+                })}
+                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                rows={3}
+                placeholder="Enter evidence (one per line)..."
+              />
+            ) : (
+              <div className="space-y-2">
+                {skill.evidence && skill.evidence.length > 0 ? (
+                  skill.evidence.map((evidence, index) => (
+                    <div key={index} className="bg-blue-50 p-3 rounded-md">
+                      <p className="text-sm text-blue-800">{evidence}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm">No evidence recorded</p>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Development Plan */}
@@ -157,7 +212,7 @@ const SkillModal: React.FC<SkillModalProps> = ({ skill, isOpen, onClose, onUpdat
               <Lightbulb className="w-4 h-4 text-yellow-500 mr-2" />
               <span className="text-sm font-medium text-gray-700">Development Plan</span>
             </div>
-            {isEditing ? (
+            {isEditing && canEdit ? (
               <textarea
                 value={editedSkill.developmentPlan || ''}
                 onChange={(e) => setEditedSkill({ ...editedSkill, developmentPlan: e.target.value })}
@@ -206,12 +261,15 @@ const SkillModal: React.FC<SkillModalProps> = ({ skill, isOpen, onClose, onUpdat
               >
                 Close
               </button>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
-              >
-                Edit Skill
-              </button>
+              {canEdit && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Skill
+                </button>
+              )}
             </>
           )}
         </div>

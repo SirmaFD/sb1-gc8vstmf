@@ -8,6 +8,7 @@ interface AuthContextType extends AuthState {
   hasPermission: (permission: Permission) => boolean;
   hasAnyPermission: (permissions: Permission[]) => boolean;
   canAccessResource: (resource: string, action: string, context?: any) => boolean;
+  canEditResource: (resource: string, context?: any) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -121,11 +122,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const canAccessResource = (resource: string, action: string, context?: any): boolean => {
     if (!authState.user) return false;
 
-    // Define access control rules - more permissive for employees
+    // Define access control rules - employees can access their own data
     const rules: Record<string, Permission[]> = {
       'dashboard': [
-        Permission.VIEW_OWN_PROFILE, // All users can access dashboard
-        Permission.VIEW_ORGANIZATION_DASHBOARD
+        Permission.VIEW_OWN_PROFILE // All authenticated users can access dashboard
       ],
       'organization': [
         Permission.VIEW_ORGANIZATION_DASHBOARD,
@@ -141,7 +141,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       'assessments': [
         Permission.CONDUCT_ASSESSMENTS, 
         Permission.VIEW_OWN_ASSESSMENTS,
-        Permission.VIEW_OWN_PROFILE // Allow all users to access assessments for self-assessment
+        Permission.VIEW_OWN_PROFILE // Allow self-assessment and viewing own assessments
       ],
       'job-profiles': [
         Permission.MANAGE_JOB_PROFILES, 
@@ -149,7 +149,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         Permission.VIEW_OWN_PROFILE // Allow employees to view job profiles for career planning
       ],
       'skills': [
-        Permission.VIEW_OWN_PROFILE // All authenticated users can access skills
+        Permission.VIEW_OWN_PROFILE, // All authenticated users can access skills
+        Permission.EDIT_OWN_SKILLS
       ]
     };
 
@@ -163,13 +164,37 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return hasAnyPermission(requiredPermissions);
   };
 
+  const canEditResource = (resource: string, context?: any): boolean => {
+    if (!authState.user) return false;
+
+    // Define edit permissions
+    const editRules: Record<string, Permission[]> = {
+      'skills': [
+        Permission.EDIT_OWN_SKILLS, // Employees can edit their own skills
+        Permission.EDIT_EMPLOYEE_PROFILES // Managers can edit others
+      ],
+      'assessments': [
+        Permission.CONDUCT_ASSESSMENTS, // Assessors can conduct assessments
+        Permission.VIEW_OWN_ASSESSMENTS // Users can self-assess
+      ],
+      'profile': [
+        Permission.VIEW_OWN_PROFILE, // Users can edit their own profile
+        Permission.EDIT_EMPLOYEE_PROFILES // Managers can edit others
+      ]
+    };
+
+    const requiredPermissions = editRules[resource] || [];
+    return hasAnyPermission(requiredPermissions);
+  };
+
   const value: AuthContextType = {
     ...authState,
     login,
     logout,
     hasPermission,
     hasAnyPermission,
-    canAccessResource
+    canAccessResource,
+    canEditResource
   };
 
   return (
