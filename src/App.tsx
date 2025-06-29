@@ -65,6 +65,8 @@ function AppContent() {
   }
 
   const renderContent = () => {
+    console.log('Rendering content for tab:', activeTab); // Debug log
+    
     switch (activeTab) {
       case 'dashboard':
         return (
@@ -72,61 +74,72 @@ function AppContent() {
             <Dashboard skills={skills} />
           </ProtectedRoute>
         );
+        
       case 'skills':
         return (
           <ProtectedRoute resource="skills" action="view">
             <SkillsList skills={skills} onUpdateSkill={handleUpdateSkill} />
           </ProtectedRoute>
         );
+        
       case 'organization':
         return (
           <ProtectedRoute resource="organization" action="view">
             <OrganizationDashboard employees={employees} />
           </ProtectedRoute>
         );
+        
       case 'employees':
         return (
           <ProtectedRoute resource="employees" action="view">
             <EmployeeList employees={employees} onEmployeeSelect={handleEmployeeSelect} />
           </ProtectedRoute>
         );
+        
       case 'job-profiles':
         return (
           <ProtectedRoute resource="job-profiles" action="view">
             <JobProfiles />
           </ProtectedRoute>
         );
+        
       case 'assessments':
         return (
           <ProtectedRoute resource="assessments" action="view">
             <AssessmentCenter />
           </ProtectedRoute>
         );
+        
       case 'skill-gaps':
         return (
           <ProtectedRoute requiredPermissions={[Permission.VIEW_ORGANIZATION_DASHBOARD]}>
             <SkillGapAnalysis />
           </ProtectedRoute>
         );
+        
       case 'reports':
         return (
           <ProtectedRoute requiredPermissions={[Permission.VIEW_ORGANIZATION_DASHBOARD]}>
             <ReportsAndAnalytics />
           </ProtectedRoute>
         );
+        
       case 'learning-paths':
         return (
           <ProtectedRoute resource="learning-paths" action="view">
             <LearningPaths />
           </ProtectedRoute>
         );
+        
       case 'settings':
         return (
           <ProtectedRoute requiredPermissions={[Permission.SYSTEM_CONFIGURATION]}>
             <SystemSettings />
           </ProtectedRoute>
         );
+        
       default:
+        console.log('Default case triggered for tab:', activeTab); // Debug log
         return (
           <ProtectedRoute resource="dashboard" action="view">
             <Dashboard skills={skills} />

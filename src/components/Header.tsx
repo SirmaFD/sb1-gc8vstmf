@@ -89,7 +89,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
       id: 'learning-paths', 
       label: 'Learning', 
       icon: BookOpen,
-      resource: 'skills',
+      resource: 'learning-paths',
       action: 'view'
     },
     { 
@@ -117,6 +117,7 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
   };
 
   const handleTabChange = (tabId: string) => {
+    console.log('Header: Changing tab to:', tabId); // Debug log
     onTabChange(tabId);
     setShowMobileMenu(false);
   };
@@ -142,8 +143,8 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
                       onClick={() => handleTabChange(tab.id)}
                       className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
                         activeTab === tab.id
-                          ? 'text-primary-600 bg-primary-50'
-                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                          ? 'text-primary-600 bg-primary-50 border border-primary-200'
+                          : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border border-transparent'
                       }`}
                     >
                       <tab.icon className="w-4 h-4 mr-2" />
@@ -160,7 +161,11 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
               {hasPermission(Permission.SYSTEM_CONFIGURATION) && (
                 <button 
                   onClick={() => handleTabChange('settings')}
-                  className="hidden sm:block p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className={`hidden sm:block p-2 rounded-md transition-colors ${
+                    activeTab === 'settings' 
+                      ? 'text-primary-600 bg-primary-50' 
+                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                  }`}
                   title="System Settings"
                 >
                   <Settings className="w-5 h-5" />
@@ -252,8 +257,8 @@ const Header: React.FC<HeaderProps> = ({ activeTab, onTabChange }) => {
                     onClick={() => handleTabChange(tab.id)}
                     className={`flex items-center w-full px-3 py-2 rounded-md text-base font-medium transition-colors ${
                       activeTab === tab.id
-                        ? 'text-primary-600 bg-primary-50'
-                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                        ? 'text-primary-600 bg-primary-50 border border-primary-200'
+                        : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border border-transparent'
                     }`}
                   >
                     <tab.icon className="w-5 h-5 mr-3" />
